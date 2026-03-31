@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
 
-df = pd.read_csv(r"W:\vscode\SQL\MachineLearningProject\Solar_Rock_Mine\Copy of sonar data.csv", header=None)
+df = pd.read_csv(r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Solar_Rock_Mine\Copy of sonar data.csv", header=None)
 
 
 #print(df.head(6))
@@ -36,4 +36,9 @@ input_data_reshaped = input_date_as_numpy_arr.reshape(1, -1)
 
 prediction2 = model.predict(input_data_reshaped)
 
-print(prediction2)
+#print(prediction2)
+
+if prediction2 == 'R':
+    print("The object is a Rock")
+else:
+    print("The object is a Mine")
