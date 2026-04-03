@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from sklearn.model_selection import train_test_split
+from PIL import Image
 import cv2
 
 path = r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Dog_vs_Cat_Prediction\dataset\train"
@@ -52,12 +53,38 @@ for img_file in file_names:
 original_folder = r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Dog_vs_Cat_Prediction\dataset\train"
 resized_folder = r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Dog_vs_Cat_Prediction\dataset\img_resized"
 
-file_name = os.listdir(original_folder)
-for i in range(5):
-    img_path = original_folder + "\\" + file_name[i]
+
+file_names = os.listdir(original_folder)
+cats = []
+dogs = []
+for word in file_names:
+    if word.startswith('cat'):
+        cats.append(word)
+    else:
+        dogs.append(word) 
+selected = cats[:1000] + dogs[:1000]
+
+
+cat_counter = 0
+dog_counter = 0
+
+for file_name in selected:
+    img_path = original_folder + "\\" + file_name
 
     print(img_path)
 
-    img = mpimg.imread(img_path)
-    plt.imshow(img)
-    plt.show()
+    img = Image.open(img_path)
+    img = img.resize((224,224))
+    img = img.convert("RGB")
+    new_img_path = resized_folder + "\\" + file_name
+    img.save(new_img_path)
+
+    if file_name.startswith("cat"):
+        cat_counter += 1
+    else:
+        dog_counter += 1
+    
+print("Total cats resized: ",cat_counter)
+print("Total dogs resized: ",dog_counter)
+
+
