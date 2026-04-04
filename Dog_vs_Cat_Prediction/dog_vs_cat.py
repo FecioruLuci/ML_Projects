@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from PIL import Image
 import cv2
 
-path = r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Dog_vs_Cat_Prediction\dataset\train"
+path = r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\train\train"
 
 files = glob.glob(os.path.join(path, "**/*.jpg"), recursive=True)
 file_count = len(files)
@@ -27,7 +27,7 @@ file_count = len(files)
 # img_dog = mpimg.imread(r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Dog_vs_Cat_Prediction\dataset\train\dogs\dog.15.jpg")
 # imgplot = plt.imshow(img_dog)
 # plt.show()
-file_names = os.listdir(r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Dog_vs_Cat_Prediction\dataset\train")
+file_names = os.listdir(r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\train\train")
 
 #print(file_names)
 
@@ -48,10 +48,10 @@ for img_file in file_names:
 #print("Number of dog images = ",dog_count)
 #print("Number of cat images = ",cat_count)
 
-#os.mkdir(r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Dog_vs_Cat_Prediction\dataset\img_resized")
+#os.mkdir(r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\img_resized")
 
-original_folder = r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Dog_vs_Cat_Prediction\dataset\train"
-resized_folder = r"C:\Program Files (x86)\vcodestuff\MACHINE LEARNING\Dog_vs_Cat_Prediction\dataset\img_resized"
+original_folder = r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\train\train"
+resized_folder = r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\img_resized"
 
 
 file_names = os.listdir(original_folder)
@@ -71,7 +71,7 @@ dog_counter = 0
 for file_name in selected:
     img_path = original_folder + "\\" + file_name
 
-    print(img_path)
+    #print(img_path)
 
     img = Image.open(img_path)
     img = img.resize((224,224))
@@ -84,7 +84,56 @@ for file_name in selected:
     else:
         dog_counter += 1
     
-print("Total cats resized: ",cat_counter)
-print("Total dogs resized: ",dog_counter)
+# print("Total cats resized: ",cat_counter)
+# print("Total dogs resized: ",dog_counter)
+
+# img = mpimg.imread(r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\img_resized\dog.10228.jpg")
+# imgplot = plt.imshow(img)
+# plt.show()
+
+# cat -> 0; dog -> 1
+filenames = os.listdir(resized_folder)
+labels = []
+#print(filenames)
+
+for i in range(2000):
+    file_name = filenames[i]
+    label = file_name[0:3]
+
+    if label == 'dog':
+        labels.append(1)
+    else:
+        labels.append(0)
+count_cat = 0
+count_dog = 0
+for label in labels:
+    if label == 1:
+        count_dog += 1
+    else:
+        count_cat += 1
+
+# print("Cats: ",count_cat)
+# print("Dogs: ",count_dog)
+
+files = []
+image_extension = ['*.png', '*.jpg']
+for e in image_extension:
+    pattern = os.path.join(resized_folder,e)
+    found_files = glob.glob(pattern)
+    files.extend(found_files)
+data = []
+
+for file in files:
+    img = cv2.imread(file)
+    if img is not None: 
+        data.append(np.asarray(img))
+    else:
+        print(f"Nu s-a putut face transformarea fisierului: {file}")
+dog_cat_images = np.asarray(data)
+
+print(dog_cat_images)
+
+#update
+##
 
 
