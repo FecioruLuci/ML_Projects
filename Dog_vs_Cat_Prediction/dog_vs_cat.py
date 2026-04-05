@@ -6,6 +6,11 @@ import matplotlib.image as mpimg
 from sklearn.model_selection import train_test_split
 from PIL import Image
 import cv2
+import tensorflow as tf
+import tensorflow_hub as hub
+import keras
+from keras.applications import MobileNetV2
+from keras import layers, models
 
 path = r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\train\train"
 
@@ -131,9 +136,67 @@ for file in files:
         print(f"Nu s-a putut face transformarea fisierului: {file}")
 dog_cat_images = np.asarray(data)
 
-print(dog_cat_images)
+#print(dog_cat_images)
 
-#update
-##
+print(dog_cat_images.shape)
+
+
+X = dog_cat_images
+Y = np.asarray(labels)
+
+x_train, x_test, y_train, y_test = train_test_split(X,Y,test_size=0.2,random_state=2)
+
+print(X.shape, x_train.shape, x_test.shape)
+
+x_train_scaled = x_train / 255
+x_test_scaled = x_test / 255
+
+
+base_model = MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet')
+
+
+base_model.trainable = False
+
+
+model = models.Sequential([
+    base_model,
+    layers.GlobalAveragePooling2D(),
+    layers.Dense(2, activation='softmax')
+])
+
+
+model.compile(
+    optimizer='adam',
+    loss='sparse_categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+model.fit(x_train_scaled, y_train, epochs=5)
+
+score, acc = model.evaluate(x_test_scaled, y_test)
+
+print(f"Test loss = {score} and accuracy = {acc}")
+
+input_img_path = input("Path of the image: ")
+input_image = cv2.imread(input_img_path)
+
+cv2.imshow('Imagine' ,input_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+input_image_resize = cv2.resize(input_image,(224,224))
+input_image_rgb = cv2.cvtColor(input_image_resize, cv2.COLOR_BGR2RGB)
+input_image_resize_scaled = input_image_rgb / 255
+image_reshape = np.reshape(input_image_resize_scaled, [1,224,224,3])
+input_prediction = model.predict(image_reshape)
+input_pred_label = np.argmax(input_prediction)
+
+if input_pred_label == 0:
+    print("The image is a cat")
+else:
+    print("Image is a dog")
+
+
+print(input_prediction)
 
 
