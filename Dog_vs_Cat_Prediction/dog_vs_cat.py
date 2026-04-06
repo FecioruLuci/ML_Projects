@@ -11,6 +11,8 @@ import tensorflow_hub as hub
 import keras
 from keras.applications import MobileNetV2
 from keras import layers, models
+import json
+from azureml.core.model import Model
 
 path = r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\train\train"
 
@@ -171,7 +173,7 @@ model.compile(
     metrics=['accuracy']
 )
 
-model.fit(x_train_scaled, y_train, epochs=5)
+model.fit(x_train_scaled, y_train, epochs=2)
 
 score, acc = model.evaluate(x_test_scaled, y_test)
 
@@ -199,4 +201,25 @@ else:
 
 print(input_prediction)
 
+model_file_dir = model.save(r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\model_cat_dog.h5")
 
+def init():
+    global model
+
+    model_path = Model.get_model_path(model_file_dir)
+    model = tf.keras.models.load_model(model_path)
+
+def run(raw_data):
+
+    data = np.array(json.loads(raw_data)['data'])
+
+    input_image_resize = cv2.resize(data, (224, 224))
+    input_image_scaled = input_image_resize / 255
+    image_reshape = np.reshape(input_image_scaled, [1, 224, 224, 3])
+    
+    prediction = model.predict(image_reshape)
+    label = np.argmax(prediction)
+    
+    return "Dog" if label == 1 else "Cat"
+
+#print("Modelul se va salva în:", os.getcwd())
