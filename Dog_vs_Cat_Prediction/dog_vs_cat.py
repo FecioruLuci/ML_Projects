@@ -201,7 +201,7 @@ else:
 
 print(input_prediction)
 
-model_file_dir = model.save(r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\model_cat_dog.h5")
+model_file_dir = model.save_weights(r"W:\vscode\SQL\MachineLearningProject\Dog_vs_Cat_Prediction\model\model_weights.weights.h5")
 
 def init():
     global model
