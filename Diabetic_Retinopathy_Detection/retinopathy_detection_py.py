@@ -4,11 +4,13 @@ import os
 import glob
 import matplotlib.pyplot as plt
 import cv2
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_class_weight
 from tensorflow.keras.applications import EfficientNetB3
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
+
 
 df_labels = pd.read_csv(r"W:\vscode\SQL\MachineLearningProject\Diabetic_Retinopathy_Detection\trainLabels_cropped.csv",index_col=0)
 
@@ -62,21 +64,13 @@ df_labels_cleared["file_paths"] = file_paths
 #print(df_labels_cleared.head(6))
 #print(df_labels_cleared["file_paths"])
 
-x_train, x_test, y_train, y_test = train_test_split(df_labels_cleared["file_paths"], df_labels_cleared["level"], test_size=0.2, stratify=df_labels_cleared["level"], random_state=41)
-
 # print(len(x_train),len(y_train), len(x_test), len(y_test))
-
-clase = np.asarray([0,1,2,3,4])
-
-weight = compute_class_weight(class_weight="balanced", classes=clase, y=y_train)
-
-class_weight_dict = dict(zip(clase,weight))
 
 #print(class_weight_dict)
 
 def procesare_imagine(file_path):
     img = cv2.imread(file_path)
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = cv2.resize(img, (224,224))
     img = img / 255.0
     return img
@@ -88,18 +82,22 @@ df_balansat_700 = pd.DataFrame()
 
 for level in range(0,5):
     df_level = df_labels_cleared[df_labels_cleared["level"] == level]
-    df_sample = df_level.sample(n=700, random_state=41)
+    numere = min(len(df_level), 1500)
+    df_sample = df_level.sample(n=numere, random_state=41)
     df_balansat_700 = pd.concat([df_balansat_700, df_sample])
 
 df_balansat_700 = df_balansat_700.reset_index(drop=True)
 #print(df_balansat_700.groupby("level").size()) 
 #print(df_balansat_700.head(7))
+# 1500 - 0; 1500 - 1; 1500 - 2; 872 - 3; 708 - 4
 
 
 x_train, x_test, y_train, y_test = train_test_split(df_balansat_700["file_paths"], df_balansat_700["level"], test_size=0.2, stratify=df_balansat_700["level"], random_state=41)
 
 #print(f"Avem {len(x_train)} imagini de train si {len(x_test)} imagini de test")
-# 5 levels - 700 each -> 3500 imagini; 0.2 * 3500 = 700 de test 
+clase = np.asarray([0,1,2,3,4])
+weight = compute_class_weight(class_weight="balanced", classes=clase, y=y_train)
+class_weight_dict = dict(zip(clase,weight))
 
 x_train_list = []
 
@@ -122,32 +120,39 @@ x_test_list = np.array(x_test_list)
 
 y_test = np.array(y_test)
 y_train = np.array(y_train)
-
+#print(test_img.min(), test_img.max())
 #print(y_test.shape, y_train.shape)
 # am facut si datele ce nu le stie adica labels ca array pentru a putea face comparatia
+#print(x_train_list.shape)
+base_model = EfficientNetB3(weights = "imagenet", include_top = False, input_shape = (224,224,3))
 
-model = EfficientNetB3(weights = "imagenet", include_top = False, input_shape = (224,224,3))
+base_model.trainable = True
 
-model.trainable = False
+for layer in base_model.layers[:100]:
+    layer.trainable = False
 
-# for layer in model.layers[:100]:
-#     layer.trainable = False
+data_augmentation = tf.keras.Sequential([
+    tf.keras.layers.RandomFlip("horizontal_and_vertical"),
+    tf.keras.layers.RandomRotation(0.2),
+    tf.keras.layers.RandomZoom(0.1),
+])
 
-
-x = model.output
+inputs = tf.keras.Input(shape=(224, 224, 3))
+x = data_augmentation(inputs)
+x = base_model(x, training = False)
 x = GlobalAveragePooling2D() (x)
 x = Dropout(0.3) (x)
 x = Dense(128, activation="relu") (x)
 x = Dropout(0.3) (x)
 output = Dense(5, activation="softmax") (x)
 
-model = Model(inputs = model.input, outputs = output)
+model = Model(inputs = inputs, outputs = output)
 model.summary()
 # am declarat x variabila de output a modelului, dupa l am facut intr un vector 2D, dupa l am facut sa nu invete 30% 
-# (pentru stabilitate la RAM) dupa am conectat toate straturile, dupa am setat 5 outputuri (de la 5 levels 0,1,2,3,4) 
+# (pentru stabilitate sa nu avem overfitting) dupa am conectat toate straturile, dupa am setat 5 outputuri (de la 5 levels 0,1,2,3,4) 
 # pentru clasa
 
 
-model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate = 1e-4), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 
-model.fit(x_train_list, y_train, epochs=10, batch_size=32, validation_data=(x_test_list, y_test), class_weight=class_weight_dict)
+model.fit(x_train_list, y_train, epochs=15, batch_size=32, validation_data=(x_test_list, y_test), class_weight=class_weight_dict)
